@@ -1,0 +1,21 @@
+{
+  "name": "Mutuo Calculator Dev Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": "npm i",
+  "forwardPorts": [
+    5000,
+    3306
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "anthropic.claude-code"
+      ]
+    }
+  },
+  "updateRemoteUserUID": true
+}

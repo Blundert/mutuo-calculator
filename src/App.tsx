@@ -1,0 +1,194 @@
+import { useState, useCallback, useEffect } from 'react'
+import { Calculator, Table, BarChart3, BookMarked, Sun, Moon } from 'lucide-react'
+import { MortgageForm } from './components/calculator/MortgageForm'
+import { ResultsCard } from './components/calculator/ResultsCard'
+import { SaveScenarioDialog } from './components/calculator/SaveScenarioDialog'
+import { AmortizationTable } from './components/amortization/AmortizationTable'
+import { MortgageCharts } from './components/charts/MortgageCharts'
+import { ScenarioList } from './components/scenarios/ScenarioList'
+import { ScenarioComparison } from './components/scenarios/ScenarioComparison'
+import { useMortgage } from './hooks/use-mortgage'
+import { useScenarios } from './hooks/use-scenarios'
+import { Button } from './components/ui/button'
+import { getDarkMode, setDarkMode } from './lib/db'
+import type { MortgageInputs, Scenario } from './types/mortgage'
+
+const DEFAULT_INPUTS: MortgageInputs = {
+  amount: 200000,
+  years: 20,
+  tan: 3.5,
+  fees: {
+    setupFee: 0,
+    appraisalFee: 0,
+    monthlyFee: 0,
+    insuranceCost: 0,
+  },
+}
+
+type TabId = 'calculator' | 'amortization' | 'charts' | 'scenarios'
+
+const TABS: { id: TabId; label: string; icon: typeof Calculator }[] = [
+  { id: 'calculator', label: 'Calcolatore', icon: Calculator },
+  { id: 'amortization', label: 'Ammortamento', icon: Table },
+  { id: 'charts', label: 'Grafici', icon: BarChart3 },
+  { id: 'scenarios', label: 'Scenari', icon: BookMarked },
+]
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState<TabId>('calculator')
+  const [inputs, setInputs] = useState<MortgageInputs>(DEFAULT_INPUTS)
+  const [darkMode, setDarkModeState] = useState(getDarkMode)
+  const [compareScenarios, setCompareScenarios] = useState<Scenario[] | null>(null)
+  const result = useMortgage(inputs)
+  const { scenarios, save, remove, duplicate } = useScenarios()
+
+  // Apply dark mode
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+    setDarkMode(darkMode)
+  }, [darkMode])
+
+  const handleSave = useCallback(async (name: string) => {
+    await save({
+      name,
+      amount: inputs.amount,
+      years: inputs.years,
+      tan: inputs.tan,
+      ...inputs.fees,
+    })
+  }, [inputs, save])
+
+  const handleLoadScenario = useCallback((scenario: Scenario) => {
+    setInputs({
+      amount: scenario.amount,
+      years: scenario.years,
+      tan: scenario.tan,
+      fees: {
+        setupFee: scenario.setupFee,
+        appraisalFee: scenario.appraisalFee,
+        monthlyFee: scenario.monthlyFee,
+        insuranceCost: scenario.insuranceCost,
+      },
+    })
+    setActiveTab('calculator')
+  }, [])
+
+  return (
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}
+    >
+      {/* Header */}
+      <header
+        className="sticky top-0 z-40 border-b"
+        style={{
+          backgroundColor: 'hsl(var(--background))',
+          borderColor: 'hsl(var(--border))',
+          paddingTop: 'env(safe-area-inset-top)',
+        }}
+      >
+        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-700 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">M</span>
+            </div>
+            <h1 className="font-bold text-lg">Mutuo</h1>
+          </div>
+          {/* Desktop tabs */}
+          <nav className="hidden md:flex items-center gap-1">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); setCompareScenarios(null) }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-blue-700 text-white'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                <tab.icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setDarkModeState(d => !d)}
+            aria-label="Toggle dark mode"
+          >
+            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="max-w-2xl mx-auto px-4 py-4 pb-24 md:pb-6">
+        {activeTab === 'calculator' && (
+          <div className="space-y-4">
+            <MortgageForm inputs={inputs} onChange={setInputs} />
+            <ResultsCard result={result} inputs={inputs} />
+            <SaveScenarioDialog inputs={inputs} onSave={handleSave} />
+          </div>
+        )}
+
+        {activeTab === 'amortization' && (
+          <AmortizationTable schedule={result.schedule} crossoverMonth={result.crossoverMonth} />
+        )}
+
+        {activeTab === 'charts' && (
+          <MortgageCharts
+            schedule={result.schedule}
+            crossoverMonth={result.crossoverMonth}
+            totalInterest={result.totalInterest}
+            totalPaid={result.totalPaid}
+          />
+        )}
+
+        {activeTab === 'scenarios' && (
+          compareScenarios ? (
+            <ScenarioComparison scenarios={compareScenarios} onBack={() => setCompareScenarios(null)} />
+          ) : (
+            <ScenarioList
+              scenarios={scenarios}
+              onLoad={handleLoadScenario}
+              onDelete={remove}
+              onDuplicate={duplicate}
+              onCompare={setCompareScenarios}
+            />
+          )
+        )}
+      </main>
+
+      {/* Mobile bottom navigation */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bottom-nav"
+        style={{
+          backgroundColor: 'hsl(var(--background))',
+          borderColor: 'hsl(var(--border))',
+        }}
+      >
+        <div className="flex">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setCompareScenarios(null) }}
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2 px-1 transition-colors ${
+                activeTab === tab.id
+                  ? 'text-blue-700 dark:text-blue-400'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              <tab.icon className="h-5 w-5" />
+              <span className="text-[10px] leading-none">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+    </div>
+  )
+}
