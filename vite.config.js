@@ -5,6 +5,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 export default defineConfig({
     base: '/mutuo-calculator/',
+    server: {
+        host: '0.0.0.0',
+        port: 5173,
+    },
     plugins: [
         react(),
         tailwindcss(),

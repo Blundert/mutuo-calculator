@@ -13,7 +13,7 @@ interface Props {
   onChange: (inputs: MortgageInputs) => void
 }
 
-const YEAR_OPTIONS = [5, 10, 15, 20, 25, 30]
+const YEAR_OPTIONS = [5, 10, 15, 20, 25, 30, 40]
 
 export function MortgageForm({ inputs, onChange }: Props) {
   const [feesOpen, setFeesOpen] = useState(false)
