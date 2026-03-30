@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  getAllChecklistStates, setChecklistState,
-  getAllCustomItems, addCustomItem, deleteCustomItem, updateCustomItem,
-  getAllCustomSections, addCustomSection, deleteCustomSection, updateCustomSection,
+  getAllChecklistStatesByScenario, setChecklistState,
+  getAllCustomItemsByScenario, addCustomItem, deleteCustomItem, updateCustomItem,
+  getAllCustomSectionsByScenario, addCustomSection, deleteCustomSection, updateCustomSection,
   getAllCustomSubItems, addCustomSubItem, deleteCustomSubItem, updateCustomSubItem,
 } from '../lib/db'
 import type { ChecklistItemState, CustomChecklistItem, CustomSection, CustomSubItem } from '../types/mortgage'
@@ -10,7 +10,7 @@ import type { ChecklistItemState, CustomChecklistItem, CustomSection, CustomSubI
 export type StaticItemInfo = { id: string; subCount: number }
 export type SectionInfo = { id: string; staticItems: StaticItemInfo[] }
 
-export function useChecklist() {
+export function useChecklist(scenarioId: number) {
   const [states, setStates] = useState<Map<string, ChecklistItemState>>(new Map())
   const [customItems, setCustomItems] = useState<Map<string, CustomChecklistItem[]>>(new Map())
   const [customSections, setCustomSections] = useState<CustomSection[]>([])
@@ -18,10 +18,11 @@ export function useChecklist() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     Promise.all([
-      getAllChecklistStates(),
-      getAllCustomItems(),
-      getAllCustomSections(),
+      getAllChecklistStatesByScenario(scenarioId),
+      getAllCustomItemsByScenario(scenarioId),
+      getAllCustomSectionsByScenario(scenarioId),
       getAllCustomSubItems(),
     ]).then(([allStates, allCustom, allSections, allSubs]) => {
       const stateMap = new Map<string, ChecklistItemState>()
@@ -32,6 +33,13 @@ export function useChecklist() {
         const list = customMap.get(item.sectionId) ?? []
         list.push(item)
         customMap.set(item.sectionId, list)
+      }
+
+      // Filter sub-items to only those belonging to items in this scenario
+      const scenarioItemIds = new Set<string>()
+      for (const s of allStates) scenarioItemIds.add(s.itemId)
+      for (const item of allCustom) {
+        if (item.id !== undefined) scenarioItemIds.add(`custom-${item.id}`)
       }
 
       const subMap = new Map<string, CustomSubItem[]>()
@@ -47,48 +55,48 @@ export function useChecklist() {
       setCustomSubItems(subMap)
       setLoading(false)
     })
-  }, [])
+  }, [scenarioId])
 
   const toggle = useCallback(async (itemId: string) => {
     const current = states.get(itemId)
     const newChecked = !(current?.checked ?? false)
     const note = current?.note ?? ''
-    await setChecklistState(itemId, newChecked, note)
+    await setChecklistState(scenarioId, itemId, newChecked, note)
     setStates(prev => {
       const next = new Map(prev)
-      next.set(itemId, { itemId, checked: newChecked, note, updatedAt: new Date() })
+      next.set(itemId, { scenarioId, itemId, checked: newChecked, note, updatedAt: new Date() })
       return next
     })
-  }, [states])
+  }, [scenarioId, states])
 
   const saveNote = useCallback(async (itemId: string, note: string) => {
     const current = states.get(itemId)
     const checked = current?.checked ?? false
-    await setChecklistState(itemId, checked, note)
+    await setChecklistState(scenarioId, itemId, checked, note)
     setStates(prev => {
       const next = new Map(prev)
-      next.set(itemId, { itemId, checked, note, updatedAt: new Date() })
+      next.set(itemId, { scenarioId, itemId, checked, note, updatedAt: new Date() })
       return next
     })
-  }, [states])
+  }, [scenarioId, states])
 
   const getState = useCallback((itemId: string) => {
-    return states.get(itemId) ?? { itemId, checked: false, note: '' }
-  }, [states])
+    return states.get(itemId) ?? { scenarioId, itemId, checked: false, note: '' }
+  }, [scenarioId, states])
 
   const getCustomItems = useCallback((sectionId: string): CustomChecklistItem[] => {
     return customItems.get(sectionId) ?? []
   }, [customItems])
 
   const addItem = useCallback(async (sectionId: string, label: string) => {
-    const id = await addCustomItem(sectionId, label)
-    const newItem: CustomChecklistItem = { id, sectionId, label, createdAt: new Date() }
+    const id = await addCustomItem(scenarioId, sectionId, label)
+    const newItem: CustomChecklistItem = { id, scenarioId, sectionId, label, createdAt: new Date() }
     setCustomItems(prev => {
       const next = new Map(prev)
       next.set(sectionId, [...(next.get(sectionId) ?? []), newItem])
       return next
     })
-  }, [])
+  }, [scenarioId])
 
   const removeItem = useCallback(async (sectionId: string, itemId: number) => {
     await deleteCustomItem(itemId)
@@ -103,7 +111,6 @@ export function useChecklist() {
       next.delete(cid)
       return next
     })
-    // Remove sub-items of this item from state
     setCustomSubItems(prev => {
       const next = new Map(prev)
       next.delete(cid)
@@ -158,9 +165,9 @@ export function useChecklist() {
   }, [])
 
   const addSection = useCallback(async (title: string) => {
-    const id = await addCustomSection(title)
-    setCustomSections(prev => [...prev, { id, title, createdAt: new Date() }])
-  }, [])
+    const id = await addCustomSection(scenarioId, title)
+    setCustomSections(prev => [...prev, { id, scenarioId, title, createdAt: new Date() }])
+  }, [scenarioId])
 
   const removeSection = useCallback(async (sectionId: number) => {
     await deleteCustomSection(sectionId)
@@ -175,33 +182,27 @@ export function useChecklist() {
     setCustomSections(prev => prev.map(s => s.id === sectionId ? { ...s, title } : s))
   }, [])
 
-  // Progress: counts all checked items — static items + static sub-items + custom sub-items + custom items + their custom sub-items
   const progress = useCallback((sectionId: string, staticItems: StaticItemInfo[]) => {
     let total = 0
     let checked = 0
 
-    // Static items and their sub-items
     for (const item of staticItems) {
       total++
       if (states.get(item.id)?.checked) checked++
-      // Static sub-items
       for (let j = 0; j < item.subCount; j++) {
         total++
         if (states.get(`${item.id}-sub${j}`)?.checked) checked++
       }
-      // Custom sub-items added to this static item
       for (const sub of customSubItems.get(item.id) ?? []) {
         total++
         if (sub.id !== undefined && states.get(`sub-${sub.id}`)?.checked) checked++
       }
     }
 
-    // Custom items in this section
     for (const item of customItems.get(sectionId) ?? []) {
       const cid = `custom-${item.id}`
       total++
       if (item.id !== undefined && states.get(cid)?.checked) checked++
-      // Custom sub-items of this custom item
       for (const sub of customSubItems.get(cid) ?? []) {
         total++
         if (sub.id !== undefined && states.get(`sub-${sub.id}`)?.checked) checked++

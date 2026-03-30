@@ -71,7 +71,8 @@ export interface ChecklistSectionData {
 
 export interface ChecklistItemState {
   id?: number
-  itemId: string   // "s1" = section 1 note, "s1-i2" = section 1 item index 2, "custom-{id}" = custom item
+  scenarioId: number
+  itemId: string   // "s1-i2" = section 1 item index 2, "custom-{id}" = custom item
   checked: boolean
   note: string
   updatedAt: Date
@@ -79,6 +80,7 @@ export interface ChecklistItemState {
 
 export interface CustomChecklistItem {
   id?: number
+  scenarioId: number
   sectionId: string
   label: string
   createdAt: Date
@@ -86,6 +88,7 @@ export interface CustomChecklistItem {
 
 export interface CustomSection {
   id?: number
+  scenarioId: number
   title: string
   createdAt: Date
 }
@@ -95,4 +98,25 @@ export interface CustomSubItem {
   parentItemId: string   // "s1-i0" | "custom-42"
   label: string
   createdAt: Date
+}
+
+export interface WikiItemState {
+  id?: number
+  itemId: string
+  studied: boolean
+  note: string
+  updatedAt?: Date
+}
+
+export interface WikiConceptData {
+  id: string
+  title: string
+  subtitle?: string
+  body: string
+}
+
+export interface WikiSectionData {
+  id: string
+  title: string
+  concepts: WikiConceptData[]
 }

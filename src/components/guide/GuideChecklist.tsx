@@ -645,14 +645,14 @@ function SectionCard({
 
 // ─── Main component ─────────────────────────────────────────────────────────
 
-export function GuideChecklist() {
+export function GuideChecklist({ scenarioId }: { scenarioId: number }) {
   const {
     loading, toggle, saveNote, getState,
     getCustomItems, addItem, removeItem, editItemLabel,
     getCustomSubItems, addSubItem, removeSubItem, editSubItemLabel,
     customSections, addSection, removeSection, editSectionTitle,
     progress, totalProgress,
-  } = useChecklist()
+  } = useChecklist(scenarioId)
 
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['s1']))
   const [openNotes, setOpenNotes] = useState<Set<string>>(new Set())
@@ -725,7 +725,7 @@ export function GuideChecklist() {
               style={{ width: `${totalItems > 0 ? (totalChecked / totalItems) * 100 : 0}%` }} />
           </div>
           {totalChecked === totalItems && totalItems > 0 && (
-            <p className="text-center text-sm text-green-600 dark:text-green-400 mt-2 font-medium">✓ Guida completata!</p>
+            <p className="text-center text-sm text-green-600 dark:text-green-400 mt-2 font-medium">✓ Diario completato!</p>
           )}
         </CardContent>
       </Card>
