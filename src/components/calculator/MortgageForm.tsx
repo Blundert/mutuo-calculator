@@ -6,7 +6,7 @@ import { Input } from '../ui/input'
 import { Slider } from '../ui/slider'
 import { Button } from '../ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible'
-import type { MortgageInputs, Fees } from '../../types/mortgage'
+import type { MortgageInputs, Fees, AdditionalCosts } from '../../types/mortgage'
 
 interface Props {
   inputs: MortgageInputs
@@ -17,6 +17,7 @@ const YEAR_OPTIONS = [5, 10, 15, 20, 25, 30, 40]
 
 export function MortgageForm({ inputs, onChange }: Props) {
   const [feesOpen, setFeesOpen] = useState(false)
+  const [costsOpen, setCostsOpen] = useState(false)
 
   const setAmount = useCallback((amount: number) => {
     onChange({ ...inputs, amount })
@@ -32,6 +33,10 @@ export function MortgageForm({ inputs, onChange }: Props) {
 
   const setFee = useCallback((key: keyof Fees, value: number) => {
     onChange({ ...inputs, fees: { ...inputs.fees, [key]: value } })
+  }, [inputs, onChange])
+
+  const setAdditionalCost = useCallback((key: keyof AdditionalCosts, value: number) => {
+    onChange({ ...inputs, additionalCosts: { ...inputs.additionalCosts, [key]: value } })
   }, [inputs, onChange])
 
   const yearIndex = YEAR_OPTIONS.indexOf(inputs.years)
@@ -162,6 +167,84 @@ export function MortgageForm({ inputs, onChange }: Props) {
                 onChange={e => setFee('insuranceCost', parseFloat(e.target.value) || 0)}
                 min={0}
                 step={100}
+              />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Costi della casa collapsible */}
+        <Collapsible open={costsOpen} onOpenChange={setCostsOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full justify-between">
+              <span>Costi della casa</span>
+              {costsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="downPayment">Anticipo (€)</Label>
+              <Input
+                id="downPayment"
+                type="number"
+                value={inputs.additionalCosts.downPayment}
+                onChange={e => setAdditionalCost('downPayment', parseFloat(e.target.value) || 0)}
+                min={0}
+                step={1000}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notaryAgencyTaxes">Notaio, agenzia, tasse (€)</Label>
+              <Input
+                id="notaryAgencyTaxes"
+                type="number"
+                value={inputs.additionalCosts.notaryAgencyTaxes}
+                onChange={e => setAdditionalCost('notaryAgencyTaxes', parseFloat(e.target.value) || 0)}
+                min={0}
+                step={100}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="renovationFurniture">Ristrutturazione e arredo (€)</Label>
+              <Input
+                id="renovationFurniture"
+                type="number"
+                value={inputs.additionalCosts.renovationFurniture}
+                onChange={e => setAdditionalCost('renovationFurniture', parseFloat(e.target.value) || 0)}
+                min={0}
+                step={500}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="condoFeesAnnual">Condominio (€/anno)</Label>
+              <Input
+                id="condoFeesAnnual"
+                type="number"
+                value={inputs.additionalCosts.condoFeesAnnual}
+                onChange={e => setAdditionalCost('condoFeesAnnual', parseFloat(e.target.value) || 0)}
+                min={0}
+                step={100}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maintenanceAnnual">Manutenzione (€/anno)</Label>
+              <Input
+                id="maintenanceAnnual"
+                type="number"
+                value={inputs.additionalCosts.maintenanceAnnual}
+                onChange={e => setAdditionalCost('maintenanceAnnual', parseFloat(e.target.value) || 0)}
+                min={0}
+                step={100}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tariInsuranceAnnual">TARI e assicurazione (€/anno)</Label>
+              <Input
+                id="tariInsuranceAnnual"
+                type="number"
+                value={inputs.additionalCosts.tariInsuranceAnnual}
+                onChange={e => setAdditionalCost('tariInsuranceAnnual', parseFloat(e.target.value) || 0)}
+                min={0}
+                step={50}
               />
             </div>
           </CollapsibleContent>

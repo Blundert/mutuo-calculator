@@ -12,6 +12,14 @@ const DEFAULT_INPUTS: MortgageInputs = {
     monthlyFee: 0,
     insuranceCost: 0,
   },
+  additionalCosts: {
+    downPayment: 0,
+    notaryAgencyTaxes: 0,
+    renovationFurniture: 0,
+    condoFeesAnnual: 0,
+    maintenanceAnnual: 0,
+    tariInsuranceAnnual: 0,
+  },
 }
 
 export function useScenarios() {
@@ -44,6 +52,12 @@ export function useScenarios() {
       appraisalFee: DEFAULT_INPUTS.fees.appraisalFee,
       monthlyFee: DEFAULT_INPUTS.fees.monthlyFee,
       insuranceCost: DEFAULT_INPUTS.fees.insuranceCost,
+      downPayment: DEFAULT_INPUTS.additionalCosts.downPayment,
+      notaryAgencyTaxes: DEFAULT_INPUTS.additionalCosts.notaryAgencyTaxes,
+      renovationFurniture: DEFAULT_INPUTS.additionalCosts.renovationFurniture,
+      condoFeesAnnual: DEFAULT_INPUTS.additionalCosts.condoFeesAnnual,
+      maintenanceAnnual: DEFAULT_INPUTS.additionalCosts.maintenanceAnnual,
+      tariInsuranceAnnual: DEFAULT_INPUTS.additionalCosts.tariInsuranceAnnual,
     })
     await refresh()
     return id
@@ -71,6 +85,12 @@ export function useScenarios() {
       appraisalFee: inputs.fees.appraisalFee,
       monthlyFee: inputs.fees.monthlyFee,
       insuranceCost: inputs.fees.insuranceCost,
+      downPayment: inputs.additionalCosts.downPayment,
+      notaryAgencyTaxes: inputs.additionalCosts.notaryAgencyTaxes,
+      renovationFurniture: inputs.additionalCosts.renovationFurniture,
+      condoFeesAnnual: inputs.additionalCosts.condoFeesAnnual,
+      maintenanceAnnual: inputs.additionalCosts.maintenanceAnnual,
+      tariInsuranceAnnual: inputs.additionalCosts.tariInsuranceAnnual,
       updatedAt: new Date(),
     } : s))
   }, [])

@@ -8,6 +8,12 @@ export interface Scenario {
   appraisalFee: number;
   monthlyFee: number;
   insuranceCost: number;
+  downPayment: number;
+  notaryAgencyTaxes: number;
+  renovationFurniture: number;
+  condoFeesAnnual: number;
+  maintenanceAnnual: number;
+  tariInsuranceAnnual: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +23,15 @@ export interface Fees {
   appraisalFee: number;
   monthlyFee: number;
   insuranceCost: number;
+}
+
+export interface AdditionalCosts {
+  downPayment: number;
+  notaryAgencyTaxes: number;
+  renovationFurniture: number;
+  condoFeesAnnual: number;
+  maintenanceAnnual: number;
+  tariInsuranceAnnual: number;
 }
 
 export interface AmortizationRow {
@@ -52,6 +67,7 @@ export interface MortgageInputs {
   years: number;
   tan: number;
   fees: Fees;
+  additionalCosts: AdditionalCosts;
 }
 
 export interface ChecklistItemData {

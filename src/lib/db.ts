@@ -95,6 +95,12 @@ export async function updateScenarioInputs(id: number, inputs: MortgageInputs): 
     appraisalFee: inputs.fees.appraisalFee,
     monthlyFee: inputs.fees.monthlyFee,
     insuranceCost: inputs.fees.insuranceCost,
+    downPayment: inputs.additionalCosts.downPayment,
+    notaryAgencyTaxes: inputs.additionalCosts.notaryAgencyTaxes,
+    renovationFurniture: inputs.additionalCosts.renovationFurniture,
+    condoFeesAnnual: inputs.additionalCosts.condoFeesAnnual,
+    maintenanceAnnual: inputs.additionalCosts.maintenanceAnnual,
+    tariInsuranceAnnual: inputs.additionalCosts.tariInsuranceAnnual,
     updatedAt: new Date(),
   })
 }

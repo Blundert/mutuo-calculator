@@ -45,7 +45,7 @@ export function MortgageCharts({ schedule, crossoverMonth, totalInterest, totalP
       </CardHeader>
       <CardContent className="p-0">
         <Tabs defaultValue="composizione" className="w-full">
-          <div className="px-6 pt-2">
+          <div className="px-6 pt-4">
             <TabsList className="w-full">
               <TabsTrigger value="composizione" className="flex-1 text-xs sm:text-sm">Composizione</TabsTrigger>
               <TabsTrigger value="ripartizione" className="flex-1 text-xs sm:text-sm">Ripartizione</TabsTrigger>
@@ -53,9 +53,9 @@ export function MortgageCharts({ schedule, crossoverMonth, totalInterest, totalP
             </TabsList>
           </div>
 
-          <TabsContent value="composizione" className="px-2 pb-4 pt-2">
+          <TabsContent value="composizione" className="px-2 pb-4 pt-4">
             <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={areaData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <AreaChart data={areaData} margin={{ top: 30, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorInteressi" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#f97316" stopOpacity={0.8}/>
@@ -85,9 +85,9 @@ export function MortgageCharts({ schedule, crossoverMonth, totalInterest, totalP
             </ResponsiveContainer>
           </TabsContent>
 
-          <TabsContent value="ripartizione" className="px-2 pb-4 pt-2">
+          <TabsContent value="ripartizione" className="px-2 pb-4 pt-4">
             <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
+              <PieChart margin={{ top: 30, right: 20, left: 20, bottom: 0 }}>
                 <Pie
                   data={pieData}
                   cx="50%"
@@ -111,9 +111,9 @@ export function MortgageCharts({ schedule, crossoverMonth, totalInterest, totalP
             </p>
           </TabsContent>
 
-          <TabsContent value="annuale" className="px-2 pb-4 pt-2">
+          <TabsContent value="annuale" className="px-2 pb-4 pt-4">
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <BarChart data={barData} margin={{ top: 30, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="anno" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false}

@@ -1,4 +1,5 @@
-import { Calculator, Table, TrendingUp, BookOpen } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Calculator, Table, TrendingUp, BookOpen, Pencil, Check } from 'lucide-react'
 import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
 import { formatCurrency, formatPercent } from '../../lib/format'
@@ -12,9 +13,26 @@ interface Props {
   inputs: MortgageInputs
   result: MortgageResult
   onNavigate: (tab: string) => void
+  onRename: (name: string) => void
 }
 
-export function ScenarioHome({ scenarioId, scenarioName, inputs, result, onNavigate }: Props) {
+export function ScenarioHome({ scenarioId, scenarioName, inputs, result, onNavigate, onRename }: Props) {
+  const [editing, setEditing] = useState(false)
+  const [nameValue, setNameValue] = useState(scenarioName)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editing) {
+      setNameValue(scenarioName)
+      setTimeout(() => inputRef.current?.select(), 0)
+    }
+  }, [editing, scenarioName])
+
+  const commitRename = () => {
+    const trimmed = nameValue.trim()
+    if (trimmed && trimmed !== scenarioName) onRename(trimmed)
+    setEditing(false)
+  }
   const { totalProgress, customSections, loading } = useChecklist(scenarioId)
 
   const allSectionsForProgress = [
@@ -44,9 +62,29 @@ export function ScenarioHome({ scenarioId, scenarioName, inputs, result, onNavig
               + {formatCurrency(inputs.fees.monthlyFee)} spese mensili
             </p>
           )}
-          <p className="text-xs text-muted-foreground text-center mt-2">
-            {scenarioName}
-          </p>
+          <div className="flex items-center justify-center gap-1.5 mt-2">
+            {editing ? (
+              <>
+                <input
+                  ref={inputRef}
+                  value={nameValue}
+                  onChange={e => setNameValue(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditing(false) }}
+                  className="text-sm font-semibold bg-transparent border-b border-blue-500 focus:outline-none text-center max-w-[200px]"
+                />
+                <Check className="h-3.5 w-3.5 text-blue-500 cursor-pointer" onClick={commitRename} />
+              </>
+            ) : (
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span>{scenarioName}</span>
+                <Pencil className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         </CardContent>
       </Card>
 

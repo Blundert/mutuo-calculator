@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   Home, Calculator, Table, BarChart3, BookOpen,
-  Sun, Moon, Menu, X, Check, Pencil, ArrowLeft, BookMarked,
+  Sun, Moon, Menu, X, Check, ArrowLeft, BookMarked,
 } from 'lucide-react'
 import { MortgageForm } from './components/calculator/MortgageForm'
 import { ResultsCard } from './components/calculator/ResultsCard'
+import { TotalCostCard } from './components/calculator/TotalCostCard'
 import { AmortizationTable } from './components/amortization/AmortizationTable'
 import { MortgageCharts } from './components/charts/MortgageCharts'
 import { ScenarioSelector } from './components/scenarios/ScenarioSelector'
@@ -79,52 +80,15 @@ function inputsFromScenario(s: Scenario): MortgageInputs {
       monthlyFee: s.monthlyFee,
       insuranceCost: s.insuranceCost,
     },
+    additionalCosts: {
+      downPayment: s.downPayment ?? 0,
+      notaryAgencyTaxes: s.notaryAgencyTaxes ?? 0,
+      renovationFurniture: s.renovationFurniture ?? 0,
+      condoFeesAnnual: s.condoFeesAnnual ?? 0,
+      maintenanceAnnual: s.maintenanceAnnual ?? 0,
+      tariInsuranceAnnual: s.tariInsuranceAnnual ?? 0,
+    },
   }
-}
-
-// ─── Scenario name editor ─────────────────────────────────────────────────────
-
-function ScenarioNameEditor({ name, onSave }: { name: string; onSave: (name: string) => void }) {
-  const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState(name)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (editing) {
-      setValue(name)
-      setTimeout(() => inputRef.current?.select(), 0)
-    }
-  }, [editing, name])
-
-  const commit = () => {
-    const trimmed = value.trim()
-    if (trimmed && trimmed !== name) onSave(trimmed)
-    setEditing(false)
-  }
-
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        value={value}
-        onChange={e => setValue(e.target.value)}
-        onBlur={commit}
-        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-        className="text-sm font-semibold bg-transparent border-b border-blue-500 focus:outline-none max-w-[160px]"
-        style={{ color: 'hsl(var(--foreground))' }}
-      />
-    )
-  }
-
-  return (
-    <button
-      onClick={() => setEditing(true)}
-      className="flex items-center gap-1 text-sm font-semibold hover:opacity-70 transition-opacity max-w-[160px] truncate"
-    >
-      <span className="truncate">{name}</span>
-      <Pencil className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
-    </button>
-  )
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -149,6 +113,7 @@ export default function App() {
   const [inputs, setInputs] = useState<MortgageInputs>({
     amount: 200000, years: 20, tan: 3.5,
     fees: { setupFee: 0, appraisalFee: 0, monthlyFee: 0, insuranceCost: 0 },
+    additionalCosts: { downPayment: 0, notaryAgencyTaxes: 0, renovationFurniture: 0, condoFeesAnnual: 0, maintenanceAnnual: 0, tariInsuranceAnnual: 0 },
   })
 
   useEffect(() => {
@@ -288,17 +253,9 @@ export default function App() {
               <span className="font-semibold text-sm truncate">Guida al mutuo</span>
             )}
 
-            {/* Scenario: name on mobile, name + tabs on desktop */}
+            {/* Scenario: tabs on desktop */}
             {inScenario && activeScenario && (
               <>
-                {/* Scenario name — visible always */}
-                <div className="flex-shrink-0 mr-3">
-                  <ScenarioNameEditor
-                    name={activeScenario.name}
-                    onSave={(name) => activeScenario.id && rename(activeScenario.id, name)}
-                  />
-                </div>
-
                 {/* Tabs — desktop only, inline in header */}
                 <nav className="hidden md:flex items-center h-14 gap-0.5">
                   {SCENARIO_TABS.map(tab => {
@@ -397,12 +354,14 @@ export default function App() {
                 inputs={inputs}
                 result={result}
                 onNavigate={(tab) => navigateTo('scenario', { tab: tab as ScenarioTab })}
+                onRename={(name) => activeScenario.id && rename(activeScenario.id, name)}
               />
             )}
             {scenarioTab === 'calculator' && (
               <div className="space-y-4">
                 <MortgageForm inputs={inputs} onChange={setInputs} />
                 <ResultsCard result={result} inputs={inputs} />
+                <TotalCostCard result={result} inputs={inputs} />
               </div>
             )}
             {scenarioTab === 'amortization' && (
