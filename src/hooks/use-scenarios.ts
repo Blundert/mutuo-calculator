@@ -14,35 +14,15 @@ const DEFAULT_INPUTS: MortgageInputs = {
   },
 }
 
-function getStoredActiveId(): number | null {
-  const v = localStorage.getItem('activeScenarioId')
-  return v ? Number(v) : null
-}
-
-function storeActiveId(id: number | null) {
-  if (id === null) {
-    localStorage.removeItem('activeScenarioId')
-  } else {
-    localStorage.setItem('activeScenarioId', String(id))
-  }
-}
-
 export function useScenarios() {
   const [scenarios, setScenarios] = useState<Scenario[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeScenarioId, setActiveScenarioIdState] = useState<number | null>(getStoredActiveId)
 
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
       const all = await getAllScenarios()
       setScenarios(all)
-      // If stored active scenario no longer exists, clear it
-      const stored = getStoredActiveId()
-      if (stored !== null && !all.find(s => s.id === stored)) {
-        storeActiveId(null)
-        setActiveScenarioIdState(null)
-      }
     } finally {
       setLoading(false)
     }
@@ -52,14 +32,9 @@ export function useScenarios() {
     refresh()
   }, [refresh])
 
-  const setActive = useCallback((id: number | null) => {
-    storeActiveId(id)
-    setActiveScenarioIdState(id)
-  }, [])
-
   const create = useCallback(async (): Promise<number> => {
-    const count = (await getAllScenarios()).length
-    const name = `Scenario ${count + 1}`
+    const all = await getAllScenarios()
+    const name = `Scenario ${all.length + 1}`
     const id = await saveScenario({
       name,
       amount: DEFAULT_INPUTS.amount,
@@ -76,12 +51,8 @@ export function useScenarios() {
 
   const remove = useCallback(async (id: number) => {
     await deleteScenario(id)
-    if (activeScenarioId === id) {
-      storeActiveId(null)
-      setActiveScenarioIdState(null)
-    }
     await refresh()
-  }, [refresh, activeScenarioId])
+  }, [refresh])
 
   const duplicate = useCallback(async (id: number): Promise<number> => {
     const newId = await duplicateScenario(id)
@@ -109,10 +80,5 @@ export function useScenarios() {
     setScenarios(prev => prev.map(s => s.id === id ? { ...s, name } : s))
   }, [])
 
-  const activeScenario = scenarios.find(s => s.id === activeScenarioId) ?? null
-
-  return {
-    scenarios, loading, activeScenarioId, activeScenario,
-    setActive, create, remove, duplicate, updateInputs, rename, refresh,
-  }
+  return { scenarios, loading, create, remove, duplicate, updateInputs, rename, refresh }
 }
