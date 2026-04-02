@@ -14,6 +14,12 @@ interface CostRow {
   indent?: boolean
 }
 
+function ltvColor(ltv: number): string {
+  if (ltv <= 80) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+  if (ltv <= 90) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+  return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+}
+
 export function TotalCostCard({ result, inputs }: Props) {
   const { years, additionalCosts: ac } = inputs
 
@@ -38,6 +44,8 @@ export function TotalCostCard({ result, inputs }: Props) {
   ]
 
   const grandTotalMonthly = grandTotal / (years * 12)
+  const hv = ac.houseValue ?? 0
+  const ltv = hv > 0 ? (inputs.amount / hv) * 100 : null
 
   return (
     <Card>
@@ -45,6 +53,20 @@ export function TotalCostCard({ result, inputs }: Props) {
         <CardTitle>Costo Totale ({years} anni)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {hv > 0 && ltv !== null && (
+          <div className="flex items-center justify-between pb-2 border-b">
+            <span className="text-sm text-muted-foreground">Valore immobile</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{formatCurrency(hv)}</span>
+              <span
+                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ltvColor(ltv)}`}
+                title="LTV: rapporto tra importo del mutuo e valore dell'immobile"
+              >
+                LTV {ltv.toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        )}
         {rows.map((row) => (
           <div key={row.label} className={row.indent ? 'pl-4' : ''}>
             <div className="flex justify-between items-center mb-1">

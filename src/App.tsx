@@ -81,6 +81,7 @@ function inputsFromScenario(s: Scenario): MortgageInputs {
       insuranceCost: s.insuranceCost,
     },
     additionalCosts: {
+      houseValue: s.houseValue ?? 0,
       downPayment: s.downPayment ?? 0,
       notaryAgencyTaxes: s.notaryAgencyTaxes ?? 0,
       renovationFurniture: s.renovationFurniture ?? 0,
@@ -113,7 +114,7 @@ export default function App() {
   const [inputs, setInputs] = useState<MortgageInputs>({
     amount: 200000, years: 20, tan: 3.5,
     fees: { setupFee: 0, appraisalFee: 0, monthlyFee: 0, insuranceCost: 0 },
-    additionalCosts: { downPayment: 0, notaryAgencyTaxes: 0, renovationFurniture: 0, condoFeesAnnual: 0, maintenanceAnnual: 0, tariInsuranceAnnual: 0 },
+    additionalCosts: { houseValue: 0, downPayment: 0, notaryAgencyTaxes: 0, renovationFurniture: 0, condoFeesAnnual: 0, maintenanceAnnual: 0, tariInsuranceAnnual: 0 },
   })
 
   useEffect(() => {

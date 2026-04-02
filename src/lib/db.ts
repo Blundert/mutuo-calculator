@@ -66,6 +66,15 @@ class MortgageDB extends Dexie {
       customSubItems: '++id, parentItemId, createdAt',
       wikiStates: '++id, &itemId',
     })
+    // Version 8: add houseValue to scenarios (no schema change needed, Dexie handles new columns automatically)
+    this.version(8).stores({
+      scenarios: '++id, name, createdAt',
+      checklistStates: '++id, [scenarioId+itemId], scenarioId',
+      customChecklistItems: '++id, scenarioId, sectionId, createdAt',
+      customSections: '++id, scenarioId, createdAt',
+      customSubItems: '++id, parentItemId, createdAt',
+      wikiStates: '++id, &itemId',
+    })
   }
 }
 
@@ -95,6 +104,7 @@ export async function updateScenarioInputs(id: number, inputs: MortgageInputs): 
     appraisalFee: inputs.fees.appraisalFee,
     monthlyFee: inputs.fees.monthlyFee,
     insuranceCost: inputs.fees.insuranceCost,
+    houseValue: inputs.additionalCosts.houseValue,
     downPayment: inputs.additionalCosts.downPayment,
     notaryAgencyTaxes: inputs.additionalCosts.notaryAgencyTaxes,
     renovationFurniture: inputs.additionalCosts.renovationFurniture,

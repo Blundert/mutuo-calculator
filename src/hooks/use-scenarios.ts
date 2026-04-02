@@ -13,6 +13,7 @@ const DEFAULT_INPUTS: MortgageInputs = {
     insuranceCost: 0,
   },
   additionalCosts: {
+    houseValue: 0,
     downPayment: 0,
     notaryAgencyTaxes: 0,
     renovationFurniture: 0,

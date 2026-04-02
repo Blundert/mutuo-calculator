@@ -15,12 +15,25 @@ interface Props {
 
 const YEAR_OPTIONS = [5, 10, 15, 20, 25, 30, 40]
 
+function pct(value: number, base: number): string {
+  if (!base) return ''
+  return (value / base * 100).toFixed(1) + '%'
+}
+
+function ltvColor(ltv: number): string {
+  if (ltv <= 80) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+  if (ltv <= 90) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+  return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+}
+
 export function MortgageForm({ inputs, onChange }: Props) {
   const [feesOpen, setFeesOpen] = useState(false)
   const [costsOpen, setCostsOpen] = useState(false)
 
   const setAmount = useCallback((amount: number) => {
-    onChange({ ...inputs, amount })
+    const ac = inputs.additionalCosts
+    const newDownPayment = ac.houseValue > 0 ? Math.max(0, ac.houseValue - amount) : ac.downPayment
+    onChange({ ...inputs, amount, additionalCosts: { ...ac, downPayment: newDownPayment } })
   }, [inputs, onChange])
 
   const setYears = useCallback((years: number) => {
@@ -39,7 +52,14 @@ export function MortgageForm({ inputs, onChange }: Props) {
     onChange({ ...inputs, additionalCosts: { ...inputs.additionalCosts, [key]: value } })
   }, [inputs, onChange])
 
+  const setHouseValue = useCallback((houseValue: number) => {
+    const newDownPayment = houseValue > 0 ? Math.max(0, houseValue - inputs.amount) : inputs.additionalCosts.downPayment
+    onChange({ ...inputs, additionalCosts: { ...inputs.additionalCosts, houseValue, downPayment: newDownPayment } })
+  }, [inputs, onChange])
+
   const yearIndex = YEAR_OPTIONS.indexOf(inputs.years)
+  const hv = inputs.additionalCosts.houseValue
+  const ltv = hv > 0 ? (inputs.amount / hv) * 100 : null
 
   return (
     <Card>
@@ -181,8 +201,45 @@ export function MortgageForm({ inputs, onChange }: Props) {
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 mt-4">
+            {/* Valore immobile */}
             <div className="space-y-2">
-              <Label htmlFor="downPayment">Anticipo (€)</Label>
+              <Label htmlFor="houseValue">Valore immobile (€)</Label>
+              <Input
+                id="houseValue"
+                type="number"
+                value={inputs.additionalCosts.houseValue || ''}
+                placeholder="es. 250000"
+                onChange={e => setHouseValue(parseFloat(e.target.value) || 0)}
+                min={0}
+                step={5000}
+              />
+              {ltv !== null && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ltvColor(ltv)}`}
+                    title="LTV (Loan to Value): rapporto tra importo del mutuo e valore dell'immobile. Vedi la sezione 'Guida' per approfondire."
+                  >
+                    LTV {ltv.toFixed(1)}%
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {ltv <= 80 ? 'ottimo' : ltv <= 90 ? 'nella norma' : 'alto — spread più elevati'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Anticipo */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-baseline">
+                <Label htmlFor="downPayment">
+                  Anticipo (€){hv > 0 ? ' — calcolato' : ''}
+                </Label>
+                {hv > 0 && inputs.additionalCosts.downPayment > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    = {pct(inputs.additionalCosts.downPayment, hv)} del valore
+                  </span>
+                )}
+              </div>
               <Input
                 id="downPayment"
                 type="number"
@@ -192,8 +249,17 @@ export function MortgageForm({ inputs, onChange }: Props) {
                 step={1000}
               />
             </div>
+
+            {/* Notaio, agenzia, tasse */}
             <div className="space-y-2">
-              <Label htmlFor="notaryAgencyTaxes">Notaio, agenzia, tasse (€)</Label>
+              <div className="flex justify-between items-baseline">
+                <Label htmlFor="notaryAgencyTaxes">Notaio, agenzia, tasse (€)</Label>
+                {hv > 0 && inputs.additionalCosts.notaryAgencyTaxes > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    = {pct(inputs.additionalCosts.notaryAgencyTaxes, hv)} del valore
+                  </span>
+                )}
+              </div>
               <Input
                 id="notaryAgencyTaxes"
                 type="number"
@@ -202,7 +268,14 @@ export function MortgageForm({ inputs, onChange }: Props) {
                 min={0}
                 step={100}
               />
+              {hv > 0 && inputs.additionalCosts.notaryAgencyTaxes === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  tipico: 3–6% del valore (≈ € {Math.round(hv * 0.04).toLocaleString('it-IT')})
+                </p>
+              )}
             </div>
+
+            {/* Ristrutturazione e arredo */}
             <div className="space-y-2">
               <Label htmlFor="renovationFurniture">Ristrutturazione e arredo (€)</Label>
               <Input
@@ -214,8 +287,17 @@ export function MortgageForm({ inputs, onChange }: Props) {
                 step={500}
               />
             </div>
+
+            {/* Condominio */}
             <div className="space-y-2">
-              <Label htmlFor="condoFeesAnnual">Condominio (€/anno)</Label>
+              <div className="flex justify-between items-baseline">
+                <Label htmlFor="condoFeesAnnual">Condominio (€/anno)</Label>
+                {hv > 0 && inputs.additionalCosts.condoFeesAnnual > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    = {pct(inputs.additionalCosts.condoFeesAnnual, hv)}/anno del valore
+                  </span>
+                )}
+              </div>
               <Input
                 id="condoFeesAnnual"
                 type="number"
@@ -225,8 +307,17 @@ export function MortgageForm({ inputs, onChange }: Props) {
                 step={100}
               />
             </div>
+
+            {/* Manutenzione */}
             <div className="space-y-2">
-              <Label htmlFor="maintenanceAnnual">Manutenzione (€/anno)</Label>
+              <div className="flex justify-between items-baseline">
+                <Label htmlFor="maintenanceAnnual">Manutenzione (€/anno)</Label>
+                {hv > 0 && inputs.additionalCosts.maintenanceAnnual > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    = {pct(inputs.additionalCosts.maintenanceAnnual, hv)}/anno del valore
+                  </span>
+                )}
+              </div>
               <Input
                 id="maintenanceAnnual"
                 type="number"
@@ -235,9 +326,23 @@ export function MortgageForm({ inputs, onChange }: Props) {
                 min={0}
                 step={100}
               />
+              {hv > 0 && inputs.additionalCosts.maintenanceAnnual === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  tipico: 0,5–1%/anno del valore (≈ € {Math.round(hv * 0.008).toLocaleString('it-IT')}/anno)
+                </p>
+              )}
             </div>
+
+            {/* TARI e assicurazione */}
             <div className="space-y-2">
-              <Label htmlFor="tariInsuranceAnnual">TARI e assicurazione (€/anno)</Label>
+              <div className="flex justify-between items-baseline">
+                <Label htmlFor="tariInsuranceAnnual">TARI e assicurazione (€/anno)</Label>
+                {hv > 0 && inputs.additionalCosts.tariInsuranceAnnual > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    = {pct(inputs.additionalCosts.tariInsuranceAnnual, hv)}/anno del valore
+                  </span>
+                )}
+              </div>
               <Input
                 id="tariInsuranceAnnual"
                 type="number"

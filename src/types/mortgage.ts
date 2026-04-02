@@ -8,6 +8,7 @@ export interface Scenario {
   appraisalFee: number;
   monthlyFee: number;
   insuranceCost: number;
+  houseValue?: number;
   downPayment: number;
   notaryAgencyTaxes: number;
   renovationFurniture: number;
@@ -26,6 +27,7 @@ export interface Fees {
 }
 
 export interface AdditionalCosts {
+  houseValue: number;
   downPayment: number;
   notaryAgencyTaxes: number;
   renovationFurniture: number;
