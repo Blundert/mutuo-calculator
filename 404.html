@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script>
+    // GitHub Pages SPA fallback: redirect to index.html preserving the path
+    var base = '/mutuo-calculator';
+    var path = window.location.pathname.slice(base.length) || '/';
+    var search = window.location.search;
+    window.location.replace(base + '/?redirect=' + encodeURIComponent(path + search));
+  </script>
+</head>
+<body></body>
+</html>
