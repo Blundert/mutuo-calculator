@@ -246,6 +246,53 @@ export async function setWikiState(itemId: string, studied: boolean, note: strin
   }
 }
 
+// ─── Checklist export helper ─────────────────────────────────────────────────
+
+export async function getScenarioChecklistData(scenarioId: number): Promise<{
+  states: ChecklistItemState[]
+  customSections: CustomSection[]
+  customItems: CustomChecklistItem[]
+  customSubItems: CustomSubItem[]
+}> {
+  const [states, customSections, customItems] = await Promise.all([
+    getAllChecklistStatesByScenario(scenarioId),
+    getAllCustomSectionsByScenario(scenarioId),
+    getAllCustomItemsByScenario(scenarioId),
+  ])
+
+  const customSubItems: CustomSubItem[] = []
+  const seenSubIds = new Set<number>()
+
+  // Subitems under custom items
+  for (const item of customItems) {
+    if (item.id !== undefined) {
+      const subs = await db.customSubItems.where('parentItemId').equals(`custom-${item.id}`).toArray()
+      for (const sub of subs) {
+        if (sub.id !== undefined && !seenSubIds.has(sub.id)) {
+          seenSubIds.add(sub.id)
+          customSubItems.push(sub)
+        }
+      }
+    }
+  }
+
+  // Subitems under static items referenced in this scenario's states
+  for (const state of states) {
+    if (state.itemId.startsWith('sub-')) {
+      const subId = parseInt(state.itemId.slice(4))
+      if (!isNaN(subId) && !seenSubIds.has(subId)) {
+        const sub = await db.customSubItems.get(subId)
+        if (sub) {
+          seenSubIds.add(subId)
+          customSubItems.push(sub)
+        }
+      }
+    }
+  }
+
+  return { states, customSections, customItems, customSubItems }
+}
+
 // ─── Dark mode preference (localStorage) ─────────────────────────────────────
 
 export function getDarkMode(): boolean {

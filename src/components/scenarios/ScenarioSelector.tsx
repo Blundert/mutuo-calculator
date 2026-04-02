@@ -1,12 +1,14 @@
-import { useState } from 'react'
-import { Plus, Trash2, Copy, ChevronRight, BarChart3 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Plus, Trash2, Copy, ChevronRight, BarChart3, Download, Upload } from 'lucide-react'
 import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog'
 import { ScenarioComparison } from './ScenarioComparison'
 import { formatCurrency } from '../../lib/format'
 import { monthlyPayment } from '../../lib/mortgage-math'
+import { getScenarioChecklistData } from '../../lib/db'
 import type { Scenario } from '../../types/mortgage'
+import type { ScenarioImportFile } from '../../hooks/use-scenarios'
 
 interface Props {
   scenarios: Scenario[]
@@ -15,12 +17,16 @@ interface Props {
   onSelect: (id: number) => void
   onDelete: (id: number) => Promise<void>
   onDuplicate: (id: number) => Promise<number>
+  onImport: (data: ScenarioImportFile) => Promise<void>
 }
 
-export function ScenarioSelector({ scenarios, activeScenarioId, onCreate, onSelect, onDelete, onDuplicate }: Props) {
+export function ScenarioSelector({ scenarios, activeScenarioId, onCreate, onSelect, onDelete, onDuplicate, onImport }: Props) {
   const [creating, setCreating] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
   const [compareScenarios, setCompareScenarios] = useState<Scenario[] | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleCreate = async () => {
     setCreating(true)
@@ -28,6 +34,71 @@ export function ScenarioSelector({ scenarios, activeScenarioId, onCreate, onSele
       await onCreate()
     } finally {
       setCreating(false)
+    }
+  }
+
+  const [exporting, setExporting] = useState(false)
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const scenarioExports = await Promise.all(
+        scenarios.map(async ({ id, name, amount, years, tan, setupFee, appraisalFee, monthlyFee, insuranceCost, houseValue, downPayment, notaryAgencyTaxes, renovationFurniture, condoFeesAnnual, maintenanceAnnual, tariInsuranceAnnual }) => {
+          const cl = id !== undefined ? await getScenarioChecklistData(id) : null
+          return {
+            name, amount, years, tan, setupFee, appraisalFee, monthlyFee, insuranceCost, houseValue,
+            downPayment, notaryAgencyTaxes, renovationFurniture, condoFeesAnnual, maintenanceAnnual, tariInsuranceAnnual,
+            checklist: cl ? {
+              states: cl.states.map(s => ({ itemId: s.itemId, checked: s.checked, note: s.note })),
+              customSections: cl.customSections.map(s => ({ exportId: s.id!, title: s.title })),
+              customItems: cl.customItems.map(i => ({ exportId: i.id!, sectionId: i.sectionId, label: i.label })),
+              customSubItems: cl.customSubItems.map(s => ({ exportId: s.id!, parentItemId: s.parentItemId, label: s.label })),
+            } : undefined,
+          }
+        })
+      )
+      const data: ScenarioImportFile = {
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        scenarios: scenarioExports,
+      }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const date = new Date().toISOString().slice(0, 10)
+      a.download = `scenari-mutuo-${date}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImportError(null)
+    setImporting(true)
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text) as ScenarioImportFile
+      if (!Array.isArray(data.scenarios) || data.scenarios.length === 0) {
+        setImportError('File non valido: nessuno scenario trovato.')
+        return
+      }
+      for (const s of data.scenarios) {
+        if (!s.name || typeof s.amount !== 'number' || typeof s.years !== 'number' || typeof s.tan !== 'number') {
+          setImportError('File non valido: alcuni scenari hanno dati mancanti.')
+          return
+        }
+      }
+      await onImport(data)
+    } catch {
+      setImportError('Impossibile leggere il file. Assicurati che sia un JSON valido.')
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -202,6 +273,39 @@ export function ScenarioSelector({ scenarios, activeScenarioId, onCreate, onSele
           })}
         </div>
       )}
+
+      {/* Backup e ripristino */}
+      <div className="pt-2">
+        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Backup e ripristino</p>
+        <div className="flex gap-2">
+          {scenarios.length > 0 && (
+            <Button variant="outline" size="sm" className="gap-1.5 flex-1" onClick={handleExport} disabled={exporting}>
+              <Download className="h-3.5 w-3.5" />
+              {exporting ? 'Esportazione…' : 'Scarica JSON'}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 flex-1"
+            disabled={importing}
+            onClick={() => { setImportError(null); fileInputRef.current?.click() }}
+          >
+            <Upload className="h-3.5 w-3.5" />
+            {importing ? 'Importazione…' : 'Importa JSON'}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={handleImportFile}
+          />
+        </div>
+        {importError && (
+          <p className="text-xs text-red-500 mt-2">{importError}</p>
+        )}
+      </div>
     </div>
   )
 }

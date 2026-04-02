@@ -105,7 +105,7 @@ export default function App() {
   )
 
   // Scenarios
-  const { scenarios, loading: scenariosLoading, create, remove, duplicate, updateInputs, rename } = useScenarios()
+  const { scenarios, loading: scenariosLoading, create, remove, duplicate, updateInputs, rename, importScenarios } = useScenarios()
 
   // Active scenario object
   const activeScenario = scenarios.find(s => s.id === activeScenarioId) ?? null
@@ -341,6 +341,7 @@ export default function App() {
             onSelect={handleSelectScenario}
             onDelete={remove}
             onDuplicate={handleDuplicateScenario}
+            onImport={importScenarios}
           />
         )}
 
