@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   Home, Calculator, Table, BarChart3, BookOpen,
-  Sun, Moon, Menu, X, Check, ArrowLeft, BookMarked,
+  Sun, Moon, Menu, X, Check, ArrowLeft, BookMarked, GraduationCap,
 } from 'lucide-react'
 import { MortgageForm } from './components/calculator/MortgageForm'
 import { ResultsCard } from './components/calculator/ResultsCard'
@@ -12,6 +12,8 @@ import { ScenarioSelector } from './components/scenarios/ScenarioSelector'
 import { ScenarioHome } from './components/scenarios/ScenarioHome'
 import { GuideChecklist } from './components/guide/GuideChecklist'
 import { MortgageWiki } from './components/guide/MortgageWiki'
+import { LandingPage } from './components/landing/LandingPage'
+import { TutorialPage } from './components/tutorial/TutorialPage'
 import { PWAInstallPrompt } from './components/PWAInstallPrompt'
 import { useMortgage } from './hooks/use-mortgage'
 import { useScenarios } from './hooks/use-scenarios'
@@ -21,7 +23,7 @@ import type { MortgageInputs, Scenario } from './types/mortgage'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type AppView = 'scenarios' | 'guide' | 'scenario'
+type AppView = 'landing' | 'scenarios' | 'guide' | 'tutorial' | 'scenario'
 type ScenarioTab = 'home' | 'calculator' | 'amortization' | 'charts' | 'logbook'
 
 const SCENARIO_TABS: { id: ScenarioTab; label: string; icon: typeof Home }[] = [
@@ -37,18 +39,26 @@ const SCENARIO_TAB_IDS = SCENARIO_TABS.map(t => t.id)
 // ─── URL routing ──────────────────────────────────────────────────────────────
 
 const BASE = '/mutuo-calculator'
+const APP_BASE = `${BASE}/app`
 
 function parsePath(pathname: string): { view: AppView; scenarioId: number | null; tab: ScenarioTab } {
   // Handle GitHub Pages redirect query param
   const search = window.location.search
   if (search.startsWith('?redirect=')) {
     const redirected = decodeURIComponent(search.slice(10))
-    return parsePath(BASE + redirected)
+    pathname = BASE + redirected
   }
 
-  let path = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname
+  // Landing: exactly /mutuo-calculator or /mutuo-calculator/
+  if (pathname === BASE || pathname === BASE + '/') {
+    return { view: 'landing', scenarioId: null, tab: 'home' }
+  }
+
+  // Everything else is under /app/
+  const path = pathname.startsWith(APP_BASE) ? pathname.slice(APP_BASE.length) : '/'
   if (!path || path === '/') return { view: 'scenarios', scenarioId: null, tab: 'home' }
   if (path === '/guide') return { view: 'guide', scenarioId: null, tab: 'home' }
+  if (path === '/tutorial') return { view: 'tutorial', scenarioId: null, tab: 'home' }
 
   const match = path.match(/^\/(\d+)(?:\/([a-z]+))?(?:\/)?$/)
   if (match) {
@@ -62,9 +72,11 @@ function parsePath(pathname: string): { view: AppView; scenarioId: number | null
 }
 
 function buildUrl(view: AppView, scenarioId?: number | null, tab?: ScenarioTab): string {
-  if (view === 'scenarios') return `${BASE}/`
-  if (view === 'guide') return `${BASE}/guide`
-  return `${BASE}/${scenarioId}/${tab ?? 'home'}`
+  if (view === 'landing') return `${BASE}/`
+  if (view === 'scenarios') return `${APP_BASE}/`
+  if (view === 'guide') return `${APP_BASE}/guide`
+  if (view === 'tutorial') return `${APP_BASE}/tutorial`
+  return `${APP_BASE}/${scenarioId}/${tab ?? 'home'}`
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -220,16 +232,20 @@ export default function App() {
       <header
         className="sticky top-0 z-40 border-b"
         style={{
-          backgroundColor: 'hsl(var(--background))',
-          borderColor: 'hsl(var(--border))',
+          backgroundColor: view === 'landing'
+            ? 'color-mix(in srgb, hsl(221 83% 53%) 8%, hsl(var(--background)))'
+            : 'hsl(var(--background))',
+          borderColor: view === 'landing'
+            ? 'color-mix(in srgb, hsl(221 83% 53%) 15%, hsl(var(--border)))'
+            : 'hsl(var(--border))',
           paddingTop: 'env(safe-area-inset-top)',
         }}
       >
-        <div className="max-w-2xl mx-auto px-3 h-14 flex items-center gap-2">
+        <div className={`${view === 'landing' ? 'max-w-4xl' : 'max-w-2xl'} mx-auto px-3 h-14 flex items-center gap-2`}>
 
           {/* ── Left: back / logo ── */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {(view === 'scenario' || view === 'guide') ? (
+            {(view === 'scenario' || view === 'guide' || view === 'tutorial') ? (
               <button
                 onClick={() => navigateTo('scenarios')}
                 className="p-1.5 -ml-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -247,11 +263,14 @@ export default function App() {
           {/* ── Center: title / scenario name + tabs on desktop ── */}
           <div className="flex-1 flex items-center gap-0 min-w-0">
             {/* Title for non-scenario views */}
-            {view === 'scenarios' && (
+            {(view === 'scenarios' || view === 'landing') && (
               <span className="font-bold text-base">Mutuo</span>
             )}
             {view === 'guide' && (
               <span className="font-semibold text-sm truncate">Guida al mutuo</span>
+            )}
+            {view === 'tutorial' && (
+              <span className="font-semibold text-sm truncate">Come usare l'app</span>
             )}
 
             {/* Scenario: tabs on desktop */}
@@ -285,43 +304,72 @@ export default function App() {
             )}
           </div>
 
-          {/* ── Right: hamburger (global nav only) + dark mode ── */}
+          {/* ── Right: hamburger (in-app only) / landing CTA + dark mode ── */}
           <div className="flex items-center gap-0.5 flex-shrink-0">
-            <div className="relative" ref={menuRef}>
-              <Button variant="ghost" size="icon" onClick={() => setMenuOpen(o => !o)} aria-label="Menu">
-                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {view === 'landing' ? (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => navigateTo('scenarios')}
+                className="text-xs px-3"
+              >
+                Vai all'app →
               </Button>
-              {menuOpen && (
-                <div
-                  className="absolute right-0 top-full mt-1 w-52 rounded-xl border shadow-xl overflow-hidden z-50"
-                  style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}
-                >
-                  <div className="px-3 py-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                      Navigazione
-                    </p>
+            ) : (
+              <div className="relative" ref={menuRef}>
+                <Button variant="ghost" size="icon" onClick={() => setMenuOpen(o => !o)} aria-label="Menu">
+                  {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </Button>
+                {menuOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-1 w-52 rounded-xl border shadow-xl overflow-hidden z-50"
+                    style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}
+                  >
+                    <div className="px-3 py-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        Navigazione
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => navigateTo('scenarios')}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted"
+                      style={{ color: 'hsl(var(--foreground))' }}
+                    >
+                      <BookMarked className={`h-4 w-4 flex-shrink-0 ${view === 'scenarios' ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                      <span className="flex-1">Scenari</span>
+                      {view === 'scenarios' && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                    </button>
+                    <button
+                      onClick={() => navigateTo('guide')}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted"
+                      style={{ color: 'hsl(var(--foreground))' }}
+                    >
+                      <BookOpen className={`h-4 w-4 flex-shrink-0 ${view === 'guide' ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                      <span className="flex-1">Guida al mutuo</span>
+                      {view === 'guide' && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                    </button>
+                    <button
+                      onClick={() => navigateTo('tutorial')}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted"
+                      style={{ color: 'hsl(var(--foreground))' }}
+                    >
+                      <GraduationCap className={`h-4 w-4 flex-shrink-0 ${view === 'tutorial' ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                      <span className="flex-1">Come usare l'app</span>
+                      {view === 'tutorial' && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                    </button>
+                    <div className="border-t my-1" style={{ borderColor: 'hsl(var(--border))' }} />
+                    <button
+                      onClick={() => navigateTo('landing')}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted"
+                      style={{ color: 'hsl(var(--foreground))' }}
+                    >
+                      <Home className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                      <span className="flex-1">Pagina iniziale</span>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => navigateTo('scenarios')}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted"
-                    style={{ color: 'hsl(var(--foreground))' }}
-                  >
-                    <BookMarked className={`h-4 w-4 flex-shrink-0 ${view === 'scenarios' ? 'text-blue-600' : 'text-muted-foreground'}`} />
-                    <span className="flex-1">Scenari</span>
-                    {view === 'scenarios' && <Check className="h-3.5 w-3.5 text-blue-600" />}
-                  </button>
-                  <button
-                    onClick={() => navigateTo('guide')}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted"
-                    style={{ color: 'hsl(var(--foreground))' }}
-                  >
-                    <BookOpen className={`h-4 w-4 flex-shrink-0 ${view === 'guide' ? 'text-blue-600' : 'text-muted-foreground'}`} />
-                    <span className="flex-1">Guida al mutuo</span>
-                    {view === 'guide' && <Check className="h-3.5 w-3.5 text-blue-600" />}
-                  </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
             <Button variant="ghost" size="icon" onClick={() => setDarkModeState(d => !d)} aria-label="Toggle dark mode">
               {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
@@ -331,7 +379,11 @@ export default function App() {
       </header>
 
       {/* ── Main content ── */}
-      <main className={`max-w-2xl mx-auto px-4 py-4 ${inScenario ? 'pb-24 md:pb-6' : 'pb-6'}`}>
+      <main className={view === 'landing' ? 'w-full' : `max-w-2xl mx-auto px-4 py-4 ${inScenario ? 'pb-24 md:pb-6' : 'pb-6'}`}>
+
+        {view === 'landing' && (
+          <LandingPage onEnterApp={() => navigateTo('scenarios')} />
+        )}
 
         {view === 'scenarios' && (
           <ScenarioSelector
@@ -346,6 +398,8 @@ export default function App() {
         )}
 
         {view === 'guide' && <MortgageWiki />}
+
+        {view === 'tutorial' && <TutorialPage />}
 
         {inScenario && activeScenario && (
           <>
@@ -385,7 +439,7 @@ export default function App() {
       </main>
 
       {/* ── Mobile bottom nav ── */}
-      {inScenario && (
+      {view === 'scenario' && (
         <nav
           className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bottom-nav"
           style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}

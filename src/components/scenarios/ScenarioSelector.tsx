@@ -181,11 +181,11 @@ export function ScenarioSelector({ scenarios, activeScenarioId, onCreate, onSele
                 }`}
               >
                 <CardContent className="p-0">
-                  <div className="flex items-center gap-0">
-                    {/* Checkbox selection for comparison */}
+                  <div className="flex items-stretch gap-0">
+                    {/* Checkbox */}
                     <button
                       onClick={() => scenario.id !== undefined && toggleSelect(scenario.id!)}
-                      className="p-3 flex-shrink-0"
+                      className="px-3 flex items-center flex-shrink-0"
                       aria-label={isSelected ? 'Deseleziona' : 'Seleziona per confronto'}
                     >
                       <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
@@ -202,38 +202,40 @@ export function ScenarioSelector({ scenarios, activeScenarioId, onCreate, onSele
                     {/* Main clickable area */}
                     <button
                       onClick={() => scenario.id !== undefined && onSelect(scenario.id!)}
-                      className="flex-1 flex items-center justify-between py-3 pr-2 text-left min-w-0"
+                      className="flex-1 py-3 pr-2 text-left min-w-0"
                     >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-sm truncate">{scenario.name}</p>
-                          {isActive && (
-                            <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                              attivo
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          <span className="text-xs text-muted-foreground">{formatCurrency(scenario.amount)}</span>
-                          <span className="text-xs text-muted-foreground">{scenario.tan}%</span>
-                          <span className="text-xs text-muted-foreground">{scenario.years} anni</span>
-                        </div>
+                      {/* Row 1: name + active badge */}
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-semibold text-sm truncate">{scenario.name}</p>
+                        {isActive && (
+                          <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                            attivo
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-blue-700 dark:text-blue-400">{formatCurrency(payment)}</p>
-                          <p className="text-[10px] text-muted-foreground">al mese</p>
+                      {/* Row 2: params + payment */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-muted-foreground">{formatCurrency(scenario.amount)}</span>
+                          <span className="text-xs text-muted-foreground">·</span>
+                          <span className="text-xs text-muted-foreground">{scenario.tan}% · {scenario.years} anni</span>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-blue-700 dark:text-blue-400 leading-tight">{formatCurrency(payment)}</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">al mese</p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       </div>
                     </button>
 
                     {/* Actions */}
-                    <div className="flex gap-0.5 pr-2 flex-shrink-0">
+                    <div className="flex flex-col justify-center gap-0 pr-1 flex-shrink-0 border-l" style={{ borderColor: 'hsl(var(--border))' }}>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                         onClick={async () => {
                           if (scenario.id) await onDuplicate(scenario.id)
                         }}
@@ -243,7 +245,7 @@ export function ScenarioSelector({ scenarios, activeScenarioId, onCreate, onSele
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" aria-label="Elimina">
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-600" aria-label="Elimina">
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </AlertDialogTrigger>

@@ -20,9 +20,13 @@ There are no tests. Type-check is the primary correctness gate — always run `n
 No React Router. Routing is entirely manual via `window.history.pushState` + `popstate` in `src/App.tsx`.
 
 URL structure:
-- `/mutuo-calculator/` → scenario selector
-- `/mutuo-calculator/guide` → global wiki
-- `/mutuo-calculator/<scenarioId>/<tab>` → scenario workspace
+- `/mutuo-calculator/` → landing page (marketing/vetrina)
+- `/mutuo-calculator/app/` → scenario selector
+- `/mutuo-calculator/app/guide` → global wiki
+- `/mutuo-calculator/app/tutorial` → how-to guide for the app's own sections
+- `/mutuo-calculator/app/<scenarioId>/<tab>` → scenario workspace
+
+Two routing anchors: `BASE = '/mutuo-calculator'` (landing lives here) and `APP_BASE = '/mutuo-calculator/app'` (all tool routes live here).
 
 `parsePath()` and `buildUrl()` in App.tsx are the single source of truth for URL ↔ state mapping. A `public/404.html` redirect script handles GitHub Pages SPA fallback.
 
@@ -66,6 +70,11 @@ Shadcn/ui components (manually copied, no CLI) in `src/components/ui/`. Tailwind
 
 The app has no top-level nav on desktop when inside a scenario — the tab bar is embedded in the header row. Mobile uses a fixed bottom nav.
 
+### UI components
+
+- `src/components/landing/LandingPage.tsx` — marketing landing page, receives `onEnterApp` prop
+- `src/components/tutorial/TutorialPage.tsx` — static how-to guide explaining each section of the app
+
 ### PWA
 
-`vite-plugin-pwa` with Workbox `generateSW` mode. Icons are generated at build time by `scripts/generate-icons.mjs` using pngjs. `navigateFallback` is set to `/mutuo-calculator/` so deep links work when installed as PWA.
+`vite-plugin-pwa` with Workbox `generateSW` mode. Icons are generated at build time by `scripts/generate-icons.mjs` using pngjs. `navigateFallback` is set to `/mutuo-calculator/index.html` so deep links work when installed as PWA. `start_url` is `/mutuo-calculator/app/` so installed PWA users land directly in the tool, bypassing the landing page.

@@ -24,7 +24,7 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/mutuo-calculator/',
+        start_url: '/mutuo-calculator/app/',
         scope: '/mutuo-calculator/',
         icons: [
           {
@@ -47,8 +47,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallback: '/mutuo-calculator/',
+        navigateFallback: '/mutuo-calculator/index.html',
         navigateFallbackAllowlist: [/^\/mutuo-calculator\//],
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
